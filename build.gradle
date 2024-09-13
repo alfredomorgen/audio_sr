@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'com.armw'
-version = '0.0.1-SNAPSHOT'
+version = '1.0'
 
 java {
   toolchain {
@@ -20,9 +20,16 @@ repositories {
 
 dependencies {
   implementation 'org.springframework.boot:spring-boot-starter-web'
-  implementation 'org.springframework.boot:spring-boot-starter-jooq'
 
+  // JAVE
+  implementation 'ws.schild:jave-core:3.5.0'
+  implementation 'ws.schild:jave-nativebin-linux64:3.5.0'
+  implementation 'ws.schild:jave-nativebin-win64:3.5.0'
+
+  // Database
+  implementation 'org.springframework.boot:spring-boot-starter-jooq'
   jooqGenerator 'org.postgresql:postgresql:42.7.4'
+  runtimeOnly 'org.postgresql:postgresql'
 
   // Lombok
   compileOnly 'org.projectlombok:lombok'
@@ -31,7 +38,6 @@ dependencies {
   testAnnotationProcessor 'org.projectlombok:lombok'
 
   developmentOnly 'org.springframework.boot:spring-boot-devtools'
-  runtimeOnly 'org.postgresql:postgresql'
   testImplementation 'org.springframework.boot:spring-boot-starter-test'
   testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
@@ -41,27 +47,32 @@ tasks.named('test') {
 }
 
 jooq {
+  version = '3.19.1'
   configurations {
     main {
       generationTool {
         jdbc {
           driver = 'org.postgresql.Driver'
           url = 'jdbc:postgresql://localhost:5432/postgres'
-          user = 'alfredo'
+          user = 'postgres'
           password = 'admin'
         }
         generator {
           name = 'org.jooq.codegen.DefaultGenerator'
           database {
-            name = 'org.jooq.meta.postgres.PostgresDatabase'  // Use your DB type
+            name = 'org.jooq.meta.postgres.PostgresDatabase'
             inputSchema = 'public'
           }
           target {
             packageName = 'com.armw.audio_sr.jooq'
-            directory = 'src/main/generated'
           }
         }
       }
     }
   }
+}
+
+tasks.named('generateJooq').configure {
+  // make jOOQ task participate in incremental builds (which is also a prerequisite for build caching)
+  allInputsDeclared = true
 }
