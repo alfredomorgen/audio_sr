@@ -31,11 +31,14 @@ public class PhraseFileService {
 		}
 
 		final String filename = String.format("%s-%s.wav", userId, phraseId);
-		final Path sourcePath = storageService.writeTempFileToPath(multipartFile, multipartFile.getOriginalFilename());
+		final Path sourcePath = storageService.writeTempFile(multipartFile, multipartFile.getOriginalFilename());
 		final Path targetPath = storageService.getPathToFile(filename);
 
 		audioConverterService.convertAudioToWAV(sourcePath.toString(), targetPath.toString());
 		phraseFileTableAccessor.insert(userId, phraseId, filename);
+
+		// Delete source phrase file as it's no longer needed
+		storageService.deleteFile(sourcePath);
 	}
 
 	public Resource getPhraseFile(final long userId, final long phraseId, final AudioFormatEnum audioFormat) throws EncoderException {
@@ -51,13 +54,20 @@ public class PhraseFileService {
 
 		final String fileUrl = phraseFileRecord.getFilePath();
 		final Path sourcePath = storageService.getPathToFile(fileUrl);
-		final Resource sourceFile = storageService.readFileFromPath(sourcePath);
+		final Resource sourceFile = storageService.readFile(sourcePath);
 		if (sourceFile == null || !sourceFile.exists()) {
 			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, String.format("Failed to locate phrase file %d", phraseId));
 		}
 
-		final Path targetPath = storageService.getPathToTempFile(fileUrl);
+		// Check if selected audio format already exists, if it does, then skip the conversion and directly return the file
+		final String filename = String.format("%s-%s.%s", userId, phraseId, audioFormat.name().toLowerCase());
+		final Path targetPath = storageService.getPathToTempFile(filename);
+		if (storageService.isFileExists(targetPath)) {
+			return storageService.readFile(targetPath);
+		}
+
+		// If selected audio format doesn't exist yet, proceed with conversion step
 		audioConverterService.convertAudioByEnum(audioFormat, sourcePath.toString(), targetPath.toString());
-		return storageService.readFileFromPath(targetPath);
+		return storageService.readFile(targetPath);
 	}
 }
