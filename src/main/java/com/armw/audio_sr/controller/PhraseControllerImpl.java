@@ -48,7 +48,10 @@ public class PhraseControllerImpl implements PhraseController {
 		userService.authenticateUser(userId);
 
 		try {
-			final AudioFormatEnum audioFormatEnum = AudioFormatEnum.valueOf(audioFormat.toUpperCase());
+			final AudioFormatEnum audioFormatEnum = AudioFormatEnum.of(audioFormat.toUpperCase());
+			if (audioFormatEnum == AudioFormatEnum.UNKNOWN) {
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Audio format not supported");
+			}
 			final Resource phraseFile = phraseFileService.getPhraseFile(userId, phraseId, audioFormatEnum);
 
 			final HttpHeaders headers = new HttpHeaders();

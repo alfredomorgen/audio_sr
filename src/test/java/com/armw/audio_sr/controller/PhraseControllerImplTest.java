@@ -93,6 +93,16 @@ public class PhraseControllerImplTest {
 	}
 
 	@Test
+	public void testGetPhrase_failed_unsupportedFormat() throws IOException {
+		testPostPhrase_success();
+
+		when()
+				.get("/audio/user/1/phrase/1/something")
+				.then()
+				.statusCode(400);
+	}
+
+	@Test
 	public void testGetPhrase_failed_notFound() {
 		when()
 				.get("/audio/user/1/phrase/1/m4a")
